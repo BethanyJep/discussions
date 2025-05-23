@@ -1,0 +1,11 @@
+Flask
+requests
+python-dotenv
+prompty[azure]
+schedule
+openai
+typing-extensions
+azure-search-documents
+azure-identity
+
+# Security note: Review these pinned versions regularly and update as needed
