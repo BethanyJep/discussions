@@ -42,4 +42,4 @@ jobs:
           AZURE_OPENAI_ENDPOINT: ${{ secrets.AZURE_OPENAI_ENDPOINT }}
           AZURE_OPENAI_KEY: ${{ secrets.AZURE_OPENAI_KEY }}
         run: |
-          python -c "import discussion_labeler/basic; basic.process_discussions()"
+          python -c "from discussion_labeler import basic; basic.process_discussions()"
