@@ -601,10 +601,11 @@ def get_discussion_node_id(owner: str, repo: str, discussion_number: int, header
 
 def get_label_node_ids(owner: str, repo: str, label_names: list, headers: Dict[str, str]) -> list:
     """Fetch node IDs for label names in a repo."""
+    # Fetch labels from the repository
     query = '''
     query($owner: String!, $repo: String!) {
       repository(owner: $owner, name: $repo) {
-        labels(first: 5) {
+        labels(first: 100) {
           nodes {
             id
             name
@@ -620,6 +621,11 @@ def get_label_node_ids(owner: str, repo: str, label_names: list, headers: Dict[s
     data = response.json()
     all_labels = data["data"]["repository"]["labels"]["nodes"]
     
+    # Check if labels exist - but don't create them
+    if len(all_labels) == 0 or not any(label["name"] in label_names for label in all_labels):
+        logger.warning(f"No requested labels found in the repository. Labels need to be created manually.")
+        # No auto-creation of labels per requirements
+    
     # Enhanced debugging for labels
     logger.info(f"Found {len(all_labels)} labels in repository: {[label['name'] for label in all_labels]}")
     
@@ -628,9 +634,13 @@ def get_label_node_ids(owner: str, repo: str, label_names: list, headers: Dict[s
     # Log the label IDs found
     found_labels = [label["name"] for label in all_labels if label["name"] in label_names]
     missing_labels = [name for name in label_names if name not in found_labels]
-    logger.info(f"Found label IDs for: {found_labels}")
+    
+    if found_labels:
+        logger.info(f"Found label IDs for: {found_labels}")
+    
     if missing_labels:
         logger.warning(f"Could not find IDs for these labels: {missing_labels}")
+        logger.warning(f"Please create these labels manually in the GitHub repository: {missing_labels}")
     
     return label_ids
 
