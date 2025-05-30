@@ -40,7 +40,7 @@ if 'prompty' in globals():
 
 # Global variables
 TOKEN = os.getenv("TOKEN")
-DEFAULT_REPO = os.getenv("DEFAULT_REPO", "golclinics/discussions")
+DEFAULT_REPO = os.getenv("DEFAULT_REPO", "azure-ai-foundry/discussions")
 REQUEST_TIMEOUT = int(os.getenv("REQUEST_TIMEOUT", "30"))  # Default 30 second timeout
 
 # App settings
@@ -604,7 +604,7 @@ def get_label_node_ids(owner: str, repo: str, label_names: list, headers: Dict[s
     query = '''
     query($owner: String!, $repo: String!) {
       repository(owner: $owner, name: $repo) {
-        labels(first: 50) {
+        labels(first: 5) {
           nodes {
             id
             name
@@ -619,7 +619,19 @@ def get_label_node_ids(owner: str, repo: str, label_names: list, headers: Dict[s
     response.raise_for_status()
     data = response.json()
     all_labels = data["data"]["repository"]["labels"]["nodes"]
+    
+    # Enhanced debugging for labels
+    logger.info(f"Found {len(all_labels)} labels in repository: {[label['name'] for label in all_labels]}")
+    
     label_ids = [label["id"] for label in all_labels if label["name"] in label_names]
+    
+    # Log the label IDs found
+    found_labels = [label["name"] for label in all_labels if label["name"] in label_names]
+    missing_labels = [name for name in label_names if name not in found_labels]
+    logger.info(f"Found label IDs for: {found_labels}")
+    if missing_labels:
+        logger.warning(f"Could not find IDs for these labels: {missing_labels}")
+    
     return label_ids
 
 def assign_labels_to_discussion(repo_url: str, discussion_number: int, label_names: list) -> bool:
@@ -628,22 +640,55 @@ def assign_labels_to_discussion(repo_url: str, discussion_number: int, label_nam
     headers = get_auth_headers()
     headers["Content-Type"] = "application/json"
     try:
+        # Get discussion ID
+        logger.info(f"Fetching discussion ID for #{discussion_number}")
         discussion_id = get_discussion_node_id(owner, repo, discussion_number, headers)
+        logger.info(f"Found discussion ID: {discussion_id}")
+        
+        # Get label IDs
+        logger.info(f"Fetching label IDs for: {label_names}")
         label_ids = get_label_node_ids(owner, repo, label_names, headers)
         if not label_ids:
             logger.error(f"No matching label IDs found for: {label_names}")
             return False
+        
+        logger.info(f"Found {len(label_ids)} label IDs: {label_ids}")
+        
+        # Add labels to discussion
         mutation = '''
         mutation($labelableId: ID!, $labelIds: [ID!]!) {
           addLabelsToLabelable(input: {labelableId: $labelableId, labelIds: $labelIds}) {
             clientMutationId
+            labelable {
+              ... on Discussion {
+                labels(first: 10) {
+                  nodes {
+                    name
+                  }
+                }
+              }
+            }
           }
         }
         '''
         variables = {"labelableId": discussion_id, "labelIds": label_ids}
         payload = {"query": mutation, "variables": variables}
         response = requests.post("https://api.github.com/graphql", headers=headers, json=payload)
+        
+        # Check for errors in the GraphQL response
+        data = response.json()
+        if "errors" in data:
+            logger.error(f"GraphQL error adding labels: {data['errors']}")
+            return False
+        
         response.raise_for_status()
+        
+        # Check if we got back label information
+        result = data.get("data", {}).get("addLabelsToLabelable", {})
+        if "labelable" in result:
+            applied_labels = [label["name"] for label in result["labelable"]["labels"]["nodes"]]
+            logger.info(f"Confirmed labels on discussion #{discussion_number}: {applied_labels}")
+        
         logger.info(f"Successfully labeled discussion #{discussion_number} with {label_names}")
         return True
     except Exception as e:
