@@ -378,12 +378,20 @@ def run_with_rag(title: str, description: str) -> List[str]:
         List of tags
     """
     try:
-        # Load tags from JSON file with better error handling
+        # Look for tags.json in the current directory and in the discussion_labeler directory
         tags_file_path = Path("tags.json")
         if not tags_file_path.exists():
-            logger.error("tags.json file not found")
-            return []
+            # Try with discussion_labeler prefix
+            tags_file_path = Path("discussion_labeler/tags.json")
+            if not tags_file_path.exists():
+                # Try with the absolute path from the current directory
+                current_dir = Path(__file__).resolve().parent
+                tags_file_path = current_dir / "tags.json"
+                if not tags_file_path.exists():
+                    logger.error(f"tags.json file not found - searched in current dir, discussion_labeler/, and {current_dir}")
+                    return []
             
+        logger.info(f"Loading tags from: {tags_file_path}")
         with open(tags_file_path, "r") as f:
             tags_data = json.load(f)
             
@@ -411,14 +419,28 @@ def run_with_rag(title: str, description: str) -> List[str]:
         # Combine search results with the original description
         augmented_description = description + "\n\n" + "\n".join(tag_strings)
         
-        # Execute the Prompty file
+        # Execute the Prompty file - look in multiple directories
         prompty_file_path = Path("basic.prompty")
+        prompty_file_name = "basic.prompty"
+        
         if not prompty_file_path.exists():
-            logger.error("basic.prompty file not found")
-            return []
+            # Try with discussion_labeler prefix
+            prompty_file_path = Path("discussion_labeler/basic.prompty")
+            prompty_file_name = "discussion_labeler/basic.prompty"
             
+            if not prompty_file_path.exists():
+                # Try with the absolute path from the current directory
+                current_dir = Path(__file__).resolve().parent
+                prompty_file_path = current_dir / "basic.prompty"
+                prompty_file_name = str(prompty_file_path)
+                
+                if not prompty_file_path.exists():
+                    logger.error(f"basic.prompty file not found - searched in current dir, discussion_labeler/, and {current_dir}")
+                    return []
+        
+        logger.info(f"Using prompty file from: {prompty_file_path}")
         raw = prompty.execute(
-            "basic.prompty",
+            prompty_file_name,
             inputs={
                 "title": title,
                 "tags": azure_tags,
@@ -426,24 +448,58 @@ def run_with_rag(title: str, description: str) -> List[str]:
             }
         )
         
+        # Enhanced debugging for prompty output
+        logger.info(f"Raw output from prompty: {raw}")
+        
         # Parse prompty's JSON output
         try:
+            if not raw or raw.strip() == "None" or raw.strip() == "null":
+                logger.error("Empty or null response from prompty")
+                return []
+                
             parsed = json.loads(raw)
+            logger.info(f"Parsed output type: {type(parsed)}, value: {parsed}")
+            
             # If prompty returns a bare list:
             if isinstance(parsed, list):
-                return [str(item) for item in parsed]  # Ensure all items are strings
+                result = [str(item) for item in parsed]  # Ensure all items are strings
+                logger.info(f"Returning tag list: {result}")
+                return result
+                
             # If it returns {"tags": [...]}:
             if isinstance(parsed, dict):
                 tags = parsed.get("tags", [])
-                return [str(item) for item in tags]  # Ensure all items are strings
+                result = [str(item) for item in tags]  # Ensure all items are strings
+                logger.info(f"Returning tags from dict: {result}")
+                return result
+                
+            logger.error(f"Unexpected parsed output format: {parsed}")
+            return []
                 
         except json.JSONDecodeError as e:
             logger.error(f"Could not parse RAG output: {e}")
-            logger.debug(f"RAG raw output: {raw}")
+            logger.error(f"RAG raw output: {raw}")
+            
+            # Try to return any valid strings that might be in the output
+            if raw and isinstance(raw, str):
+                # Try to clean the output if it looks like it might contain tags
+                if "[" in raw and "]" in raw:
+                    try:
+                        # Extract the part between [ and ]
+                        tag_part = raw[raw.find("["): raw.rfind("]") + 1]
+                        cleaned = json.loads(tag_part)
+                        if isinstance(cleaned, list):
+                            logger.info(f"Recovered tags from malformed output: {cleaned}")
+                            return [str(item) for item in cleaned]
+                    except:
+                        pass
             
     except Exception as e:
         logger.error(f"Error in run_with_rag: {str(e)}")
+        import traceback
+        logger.error(traceback.format_exc())
         
+    logger.warning("Returning empty tag list due to errors or no matches")
     return []
 
 @trace
@@ -612,9 +668,17 @@ def process_discussions(repo: str = None) -> None:
     Args:
         repo: Repository URL in the format "owner/name" (optional)
     """
+    # Set the working directory to the script's location to ensure relative paths work
+    script_dir = Path(__file__).resolve().parent
+    os.chdir(script_dir)
+    logger.info(f"Working directory set to: {os.getcwd()}")
+    
     if not repo:
         repo = DEFAULT_REPO
-        
+    
+    logger.info(f"Processing discussions for repo: {repo}")
+    logger.info(f"Using GitHub App ID: {APP_ID}")
+    
     try:
         # Validate GitHub App configuration
         validate_github_app_config()

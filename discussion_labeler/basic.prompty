@@ -51,7 +51,7 @@ system:
   Discussion Title: "New feature request: Dark mode in Azure"
   Discussion Body: "Would love to see dark mode in the Azure portal."
   Tag List: ["feature-request", "ui-design"]
-  Output: []
+  Output: ["feature-request", "ui-design"]
 
 user:
   Discussion Title: {{title}}
