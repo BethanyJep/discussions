@@ -1,7 +1,5 @@
 # Azure AI Foundry Developer Community
 
-## Never build alone. Join the Community
-
 ![Foundry Community](./images/repo-thumbnail.png)
 
 ## Never build alone, join the community! 
