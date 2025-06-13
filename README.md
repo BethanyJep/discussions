@@ -4,11 +4,11 @@
 
 ![Foundry Community](./images/repo-thumbnail.png)
 
-## Never build alone, join the community
+## Never build alone, join the community! 
 
 ### Get Started By: 
 
-1. Join **over 25,000 other developers** in the Discord and GitHub Discussions on the [Community Links](#community-links)
+1. Join **over 25,000 other developers** in the Discord and GitHub Discussions on the [Community Links](#-community-links)
 
 2. Attend the [Upcoming Events](#upcoming-events) hosted by our teams at Microsoft to give you the latest updates on Azure AI Foundry and **answer your questions.**
 
