@@ -26,7 +26,7 @@ Chat with other developers and AI Engineers, attend live community sessions host
 
 Get your questions answered about Azure AI Foundry, share your feedback, and discuss ideas with the community.
 
-[![Azure AI Foundry Developer Forum](https://img.shields.io/badge/GitHub-Azure_AI_Foundry_Developer_Forum-blue?style=for-the-badge&logo=github&color=000000&logoColor=fff)](https://aka.ms/foundry/forum)
+[![Azure AI Foundry Developer Forum](https://img.shields.io/badge/GitHub-Azure_AI_Foundry_Developer_Forum-blue?style=for-the-badge&logo=github&color=adff2f&logoColor=fff)](https://aka.ms/foundry/forum)
 
 ## 📆 Upcoming Events
 
