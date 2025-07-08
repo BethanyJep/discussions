@@ -4,7 +4,7 @@
     {"name": "ai-foundry-general", "description": "General discussions about Azure AI Foundry."},
     {"name": "ai-foundry-models", "description": "Topics concerning models within Azure AI Foundry."},
     {"name": "ai-services", "description": "Discussions about various AI services."},
-    {"name": "azure-ai-search", "description": "Topics related to Azure AI Search."},
+    {"name": "azure-ai-search", "description": "Covers Azure AI Search features including vector stores, semantic & full-text search, indexing, retrieval, and other AI-powered search capabilities."},
     {"name": "azure-openai", "description": "Discussions about Azure OpenAI services."},
     {"name": "bug", "description": "Something isn't working"},
     {"name": "documentation", "description": "Improvements or additions to documentation"},
